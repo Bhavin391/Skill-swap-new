@@ -44,12 +44,13 @@ module.exports = (usersCollection) => {
       const userId = result.insertedId.toString();
       console.log('[v0] User created with ID:', userId);
 
-      // Generate token
+      // Generate token with userId as string
       const token = jwt.sign(
-        { userId, email },
+        { userId: userId, email },
         JWT_SECRET,
         { expiresIn: '30d' }
       );
+      console.log('[v0] Token generated for userId:', userId);
 
       console.log('[v0] Signup successful for:', email);
       res.json({
@@ -90,13 +91,15 @@ module.exports = (usersCollection) => {
       }
 
       const userId = user._id.toString();
+      console.log('[v0] Login successful, userId:', userId);
 
-      // Generate token
+      // Generate token with userId as string
       const token = jwt.sign(
-        { userId, email },
+        { userId: userId, email },
         JWT_SECRET,
         { expiresIn: '30d' }
       );
+      console.log('[v0] Token generated for userId:', userId);
 
       res.json({
         message: 'Login successful',

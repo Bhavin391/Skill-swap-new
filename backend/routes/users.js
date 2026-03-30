@@ -8,33 +8,42 @@ module.exports = (usersCollection) => {
 
   // Middleware to verify token
   const verifyToken = (req, res, next) => {
-    const token = req.headers.authorization?.split(' ')[1];
+    const authHeader = req.headers.authorization;
+    console.log('[v0] Auth header:', authHeader ? 'present' : 'missing');
+    
+    const token = authHeader?.split(' ')[1];
     if (!token) {
+      console.log('[v0] No token found in authorization header');
       return res.status(401).json({ message: 'No token provided' });
     }
 
     try {
+      console.log('[v0] Verifying token...');
       const decoded = jwt.verify(token, JWT_SECRET);
+      console.log('[v0] Token decoded, userId:', decoded.userId);
       req.userId = decoded.userId;
       next();
     } catch (error) {
-      console.error('[v0] Token verification error:', error);
-      res.status(401).json({ message: 'Invalid token' });
+      console.error('[v0] Token verification error:', error.message);
+      res.status(401).json({ message: 'Invalid token: ' + error.message });
     }
   };
 
   // Get current user
   router.get('/me', verifyToken, async (req, res) => {
     try {
+      console.log('[v0] Fetching user with ID:', req.userId);
       const user = await usersCollection.findOne({ _id: new ObjectId(req.userId) });
       if (!user) {
+        console.log('[v0] User not found for ID:', req.userId);
         return res.status(404).json({ message: 'User not found' });
       }
+      console.log('[v0] User found:', user.email);
       const { password, ...userWithoutPassword } = user;
       res.json({ user: { ...userWithoutPassword, _id: user._id.toString() } });
     } catch (error) {
-      console.error('[v0] Error fetching user:', error);
-      res.status(500).json({ message: 'Error fetching user' });
+      console.error('[v0] Error fetching user:', error.message);
+      res.status(500).json({ message: 'Error fetching user: ' + error.message });
     }
   });
 

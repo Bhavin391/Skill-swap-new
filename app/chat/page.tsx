@@ -60,10 +60,6 @@ export default function ChatPage() {
       <>
         <Header />
         <main className="min-h-screen bg-gradient-to-b from-background via-background to-secondary/10 py-12">
-          <div className="fixed inset-0 pointer-events-none">
-            <div className="absolute top-20 left-10 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-float"></div>
-            <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }}></div>
-          </div>
           <div className="relative max-w-4xl mx-auto px-6 flex items-center justify-center h-96">
             <div className="flex flex-col items-center gap-4">
               <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 border-t-primary"></div>
