@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -13,10 +13,15 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata: Metadata = {
   title: "SkillSwap - Peer-to-Peer Learning Platform",
   description: "Exchange skills with peers worldwide. Learn what matters. Teach what you know.",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=5",
   icons: {
     icon: [{ url: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75' fill='%236366f1'>S</text></svg>" }],
   },

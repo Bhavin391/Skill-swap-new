@@ -14,13 +14,13 @@ export const apiClient = {
     // Get token from localStorage
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...fetchOptions.headers,
+      ...(fetchOptions.headers as Record<string, string>),
     };
 
     if (token) {
-      headers.Authorization = `Bearer ${token}`;
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     console.log(`[v0] API ${fetchOptions.method || 'GET'} ${url}`);

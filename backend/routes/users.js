@@ -63,12 +63,12 @@ module.exports = (usersCollection) => {
         { returnDocument: 'after' }
       );
 
-      if (!result.value) {
+      if (!result) {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      const { password, ...userWithoutPassword } = result.value;
-      res.json({ message: 'Skills updated', user: { ...userWithoutPassword, _id: result.value._id.toString() } });
+      const { password, ...userWithoutPassword } = result;
+      res.json({ message: 'Skills updated', user: { ...userWithoutPassword, _id: result._id.toString() } });
     } catch (error) {
       console.error('[v0] Error updating skills:', error);
       res.status(500).json({ message: 'Error updating skills' });

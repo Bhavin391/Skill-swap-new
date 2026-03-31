@@ -1,16 +1,21 @@
-'use client'
+
 
 import { useTheme } from '@/components/theme-provider'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Sun, Moon, Sparkles, LogOut } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
 export function Header() {
   const { resolvedTheme, setTheme } = useTheme()
   const [isLoading, setIsLoading] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleLogout = async () => {
     setIsLoading(true)
@@ -59,9 +64,9 @@ export function Header() {
             variant="ghost"
             onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
             className="group relative"
-            title={`Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`}
+            title={mounted ? `Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode` : 'Switch theme'}
           >
-            {resolvedTheme === 'dark' ? (
+            {mounted && resolvedTheme === 'dark' ? (
               <Sun className="w-5 h-5 text-yellow-500 group-hover:rotate-90 transition-transform" />
             ) : (
               <Moon className="w-5 h-5 text-slate-600 group-hover:rotate-90 transition-transform" />
