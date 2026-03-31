@@ -102,10 +102,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8 text-center">
             {[
-              { value: '10K+', label: 'Active Learners' },
-              { value: '500+', label: 'Skills Shared' },
-              { value: '98%', label: 'Satisfaction Rate' },
-              { value: '25K+', label: 'Connections Made' }
+             // { value: '10K+', label: 'Active Learners' },
+              //{ value: '500+', label: 'Skills Shared' },
+              //{ value: '98%', label: 'Satisfaction Rate' },
+              //{ value: '25K+', label: 'Connections Made' } 
             ].map((stat, i) => (
               <div key={i} className="space-y-2 animate-fade-scale" style={{ animationDelay: `${0.7 + i * 0.1}s` }}>
                 <p className="text-4xl md:text-5xl font-black bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
