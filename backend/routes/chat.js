@@ -145,5 +145,75 @@ module.exports = (chatsCollection, messagesCollection, usersCollection) => {
     }
   });
 
+  // Propose a session
+  router.post('/:chatId/session', verifyToken, async (req, res) => {
+    try {
+      const { time } = req.body;
+      const chat = await chatsCollection.findOne({ _id: new ObjectId(req.params.chatId) });
+      if (!chat) return res.status(404).json({ message: 'Chat not found' });
+      if (chat.user1_id.toString() !== req.userId && chat.user2_id.toString() !== req.userId) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
+
+      await chatsCollection.updateOne(
+        { _id: new ObjectId(req.params.chatId) },
+        {
+          $set: {
+            session: {
+              proposed_by: req.userId,
+              time: new Date(time),
+              status: 'pending'
+            }
+          }
+        }
+      );
+      res.json({ message: 'Session proposed' });
+    } catch (error) {
+      res.status(500).json({ message: 'Error proposing session' });
+    }
+  });
+
+  // Accept a session
+  router.put('/:chatId/session/accept', verifyToken, async (req, res) => {
+    try {
+      const chat = await chatsCollection.findOne({ _id: new ObjectId(req.params.chatId) });
+      if (!chat) return res.status(404).json({ message: 'Chat not found' });
+      if (chat.user1_id.toString() !== req.userId && chat.user2_id.toString() !== req.userId) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
+
+      await chatsCollection.updateOne(
+        { _id: new ObjectId(req.params.chatId) },
+        {
+          $set: {
+            'session.status': 'accepted'
+          }
+        }
+      );
+      res.json({ message: 'Session accepted' });
+    } catch (error) {
+      res.status(500).json({ message: 'Error accepting session' });
+    }
+  });
+
+  // Cancel/Decline a session
+  router.delete('/:chatId/session', verifyToken, async (req, res) => {
+    try {
+      const chat = await chatsCollection.findOne({ _id: new ObjectId(req.params.chatId) });
+      if (!chat) return res.status(404).json({ message: 'Chat not found' });
+      if (chat.user1_id.toString() !== req.userId && chat.user2_id.toString() !== req.userId) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
+
+      await chatsCollection.updateOne(
+        { _id: new ObjectId(req.params.chatId) },
+        { $unset: { session: "" } }
+      );
+      res.json({ message: 'Session cancelled' });
+    } catch (error) {
+      res.status(500).json({ message: 'Error cancelling session' });
+    }
+  });
+
   return router;
 };

@@ -5,25 +5,37 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
-import { Plus, X, Sparkles, TrendingUp, Edit2, MessageSquare, Users, Zap } from 'lucide-react'
+import { Plus, X, Sparkles, TrendingUp, Edit2, MessageSquare, Users, Zap, ShieldCheck, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react'
 import { Header } from '@/components/header'
 import { apiClient } from '@/lib/api-client'
 
 interface SkillData {
   skills_offering: string[]
   skills_learning: string[]
+  verified_skills?: string[]
 }
 
 export default function DashboardPage() {
   const [skillData, setSkillData] = useState<SkillData>({
     skills_offering: [],
     skills_learning: [],
+    verified_skills: [],
   })
   const [newOffering, setNewOffering] = useState('')
   const [newLearning, setNewLearning] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [matchCount, setMatchCount] = useState(0)
   const [messageCount, setMessageCount] = useState(0)
+
+  // AI Verification State
+  const [quizModalOpen, setQuizModalOpen] = useState(false)
+  const [verifyingSkill, setVerifyingSkill] = useState('')
+  const [quizData, setQuizData] = useState<any>(null)
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({})
+  const [quizError, setQuizError] = useState<string | null>(null)
+  const [quizResult, setQuizResult] = useState<'pass' | 'fail' | null>(null)
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false)
+  const [isVerifying, setIsVerifying] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
@@ -33,6 +45,7 @@ export default function DashboardPage() {
           setSkillData({
             skills_offering: data.user.skills_offering || [],
             skills_learning: data.user.skills_learning || [],
+            verified_skills: data.user.verified_skills || [],
           })
         }
       } catch (err) {
@@ -114,6 +127,47 @@ export default function DashboardPage() {
     }
   }
 
+  const startVerification = async (skill: string) => {
+    setVerifyingSkill(skill)
+    setQuizModalOpen(true)
+    setIsGeneratingQuiz(true)
+    setQuizData(null)
+    setQuizError(null)
+    setQuizResult(null)
+    setSelectedAnswers({})
+
+    try {
+      const response = await apiClient.post('/api/ai/quiz', { skill }, { timeout: 20000 })
+      setQuizData(response)
+    } catch (err: any) {
+      setQuizError(err.message || 'Failed to generate quiz')
+    } finally {
+      setIsGeneratingQuiz(false)
+    }
+  }
+
+  const submitQuiz = async () => {
+    if (!quizData) return;
+    setIsVerifying(true);
+    let score = 0;
+    quizData.questions.forEach((q: any, i: number) => {
+      if (selectedAnswers[i] === q.correctIndex) score++;
+    });
+
+    if (score >= 2) {
+      setQuizResult('pass');
+      try {
+         await apiClient.put('/api/users/me/skills/verify', { skill: verifyingSkill });
+         setSkillData(prev => ({ ...prev, verified_skills: [...(prev.verified_skills || []), verifyingSkill] }));
+      } catch (e) {
+         console.error(e);
+      }
+    } else {
+      setQuizResult('fail');
+    }
+    setIsVerifying(false);
+  }
+
   return (
     <>
       <Header />
@@ -181,7 +235,18 @@ export default function DashboardPage() {
                     className="flex items-center justify-between bg-gradient-to-r from-primary/10 to-blue-500/10 px-4 py-3 rounded-lg border border-primary/20 hover:border-primary/50 transition-all duration-200 animate-in fade-in slide-in-from-left"
                     style={{ animationDelay: `${i * 50}ms` }}
                   >
-                    <span className="text-foreground font-medium">{skill}</span>
+                    <div className="flex items-center gap-3">
+                       <span className="text-foreground font-medium">{skill}</span>
+                       {(skillData.verified_skills || []).includes(skill) ? (
+                         <span className="bg-blue-500/20 text-blue-500 text-[10px] px-2 py-0.5 rounded-full flex items-center font-bold" title="AI Verified Expert">
+                            <ShieldCheck className="w-3 h-3 mr-1" /> Verified
+                         </span>
+                       ) : (
+                         <button onClick={() => startVerification(skill)} className="text-[10px] px-2 py-0.5 bg-secondary/80 text-muted-foreground hover:bg-primary hover:text-primary-foreground rounded-full transition-colors flex items-center">
+                            Verify Skill
+                         </button>
+                       )}
+                    </div>
                     <button
                       onClick={() => removeOffering(skill)}
                       className="text-muted-foreground hover:text-destructive transition-colors duration-200 hover:scale-110"
@@ -266,6 +331,78 @@ export default function DashboardPage() {
           </div>
       </div>
     </main>
+
+      {/* AI Verification Quiz Modal */}
+      {quizModalOpen && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card border-border shadow-2xl relative">
+            <button onClick={() => setQuizModalOpen(false)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
+              <X className="w-5 h-5" />
+            </button>
+            <div className="p-6 border-b border-border bg-gradient-to-r from-primary/10 to-accent/10">
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                 <ShieldCheck className="w-6 h-6 text-primary" />
+                 Verify Skill: <span className="text-primary">{verifyingSkill}</span>
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">Pass this AI-generated quiz to earn your verified badge and stand out!</p>
+            </div>
+            
+            <div className="p-6">
+              {isGeneratingQuiz ? (
+                 <div className="py-12 flex flex-col items-center justify-center space-y-4">
+                    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                    <p className="text-muted-foreground animate-pulse text-lg">AI is generating a unique 3-question test...</p>
+                 </div>
+              ) : quizError ? (
+                 <div className="py-12 text-center space-y-4">
+                    <AlertTriangle className="w-16 h-16 text-destructive mx-auto" />
+                    <p className="text-destructive font-semibold text-lg">{quizError}</p>
+                 </div>
+              ) : quizResult === 'pass' ? (
+                 <div className="py-12 text-center space-y-4 animate-in zoom-in">
+                    <CheckCircle2 className="w-24 h-24 text-green-500 mx-auto" />
+                    <h3 className="text-3xl font-bold text-foreground">Verification Passed!</h3>
+                    <p className="text-muted-foreground text-lg">You are now a Verified Expert in {verifyingSkill}. Matching rates drastically increase for verified users.</p>
+                    <Button onClick={() => setQuizModalOpen(false)} size="lg" className="mt-4 px-10">Awesome!</Button>
+                 </div>
+              ) : quizResult === 'fail' ? (
+                 <div className="py-12 text-center space-y-4 animate-in zoom-in">
+                    <XCircle className="w-24 h-24 text-destructive mx-auto" />
+                    <h3 className="text-3xl font-bold text-foreground">Not quite there.</h3>
+                    <p className="text-muted-foreground text-lg" >You didn't pass this time. Brush up on your {verifyingSkill} skills and try again!</p>
+                    <Button onClick={() => setQuizModalOpen(false)} variant="outline" size="lg" className="mt-4 px-10">Close</Button>
+                 </div>
+              ) : quizData ? (
+                 <div className="space-y-8 animate-in slide-in-from-bottom-4 cursor-default">
+                    {quizData.questions.map((q: any, i: number) => (
+                      <div key={i} className="space-y-4">
+                        <p className="text-lg font-semibold text-foreground"><span className="text-primary mr-2 font-black">{i+1}.</span> {q.question}</p>
+                        <div className="space-y-3 pl-6">
+                           {q.options.map((opt: string, optIdx: number) => (
+                             <label key={optIdx} className={`flex items-start gap-3 p-4 rounded-xl border-2 ${selectedAnswers[i] === optIdx ? 'border-primary bg-primary/5' : 'border-border bg-background hover:border-primary/50'} cursor-pointer transition-all`}>
+                                <input type="radio" name={`q${i}`} checked={selectedAnswers[i] === optIdx} onChange={() => setSelectedAnswers(prev => ({...prev, [i]: optIdx}))} className="hidden" />
+                                <div className={`w-5 h-5 mt-0.5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${selectedAnswers[i] === optIdx ? 'border-primary' : 'border-muted-foreground'}`}>
+                                   {selectedAnswers[i] === optIdx && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                                </div>
+                                <span className="text-base text-foreground leading-snug">{opt}</span>
+                             </label>
+                           ))}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    <div className="pt-6 mt-8 border-t border-border flex justify-end">
+                       <Button onClick={submitQuiz} disabled={Object.keys(selectedAnswers).length < 3 || isVerifying} size="lg" className="w-full sm:w-auto px-10 py-6 text-lg">
+                         {isVerifying ? 'Evaluating...' : 'Submit Answers'}
+                       </Button>
+                    </div>
+                 </div>
+              ) : null}
+            </div>
+          </Card>
+        </div>
+      )}
+
     </>
   )
 }

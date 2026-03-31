@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import Link from 'next/link'
-import { MessageSquare, Star, Users, Sparkles, Filter, TrendingUp } from 'lucide-react'
+import { MessageSquare, Star, Users, Sparkles, Filter, TrendingUp, Bot } from 'lucide-react'
 import { Header } from '@/components/header'
 import { apiClient } from '@/lib/api-client'
 
@@ -23,6 +23,9 @@ export default function MatchesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [initiatingChat, setInitiatingChat] = useState<string | null>(null)
+  const [currentUserSkills, setCurrentUserSkills] = useState<{offering: string[], learning: string[]} | null>(null)
+  const [analyzingMatch, setAnalyzingMatch] = useState<string | null>(null)
+  const [synergies, setSynergies] = useState<Record<string, string>>({})
   const router = useRouter()
 
   useEffect(() => {
@@ -33,6 +36,12 @@ export default function MatchesPage() {
     setIsLoading(true)
     try {
       console.log('[v0] Loading matches...')
+      const userRes = await apiClient.get('/api/users/me')
+      setCurrentUserSkills({
+        offering: userRes.user.skills_offering || [],
+        learning: userRes.user.skills_learning || []
+      })
+
       const data = await apiClient.get('/api/matches')
       console.log('[v0] Matches loaded:', data.matches?.length || 0)
       setMatches(data.matches || [])
@@ -57,6 +66,26 @@ export default function MatchesPage() {
       setError(err.message || 'Error starting chat')
     } finally {
       setInitiatingChat(null)
+    }
+  }
+
+  const analyzeSynergy = async (matchId: string, matchName: string, matchOffering: string[], matchLearning: string[]) => {
+    if (!currentUserSkills) return;
+    setAnalyzingMatch(matchId)
+    try {
+      const response = await apiClient.post('/api/ai/synergy', { 
+        myOffering: currentUserSkills.offering,
+        myLearning: currentUserSkills.learning,
+        matchName,
+        matchOffering,
+        matchLearning
+      }, { timeout: 20000 })
+      setSynergies(prev => ({ ...prev, [matchId]: response.synergy }))
+    } catch (err: any) {
+      console.error(err)
+      setSynergies(prev => ({ ...prev, [matchId]: err.message || 'Failed to generate synergy analysis.' }))
+    } finally {
+      setAnalyzingMatch(null)
     }
   }
 
@@ -203,6 +232,41 @@ export default function MatchesPage() {
                       </span>
                     )}
                   </div>
+                </div>
+
+                {/* AI Synergy Analysis */}
+                <div className="mb-6 mt-2 border-t border-border/50 pt-5">
+                   {synergies[match._id] ? (
+                      <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 animate-in fade-in slide-in-from-top-2 relative shadow-inner">
+                         <div className="absolute -top-3 -left-2 rotate-12">
+                            <Sparkles className="w-7 h-7 text-yellow-500 fill-yellow-500/20 drop-shadow-md" />
+                         </div>
+                         <h4 className="text-sm font-bold text-primary mb-3 flex items-center gap-2">
+                           <Bot className="w-5 h-5" /> AI Match Analysis
+                         </h4>
+                         <p className="text-sm text-foreground/90 leading-relaxed italic font-medium">"{synergies[match._id]}"</p>
+                      </div>
+                   ) : (
+                      <Button 
+                         variant="secondary" 
+                         size="sm" 
+                         className="w-full text-sm font-bold bg-secondary/30 hover:bg-primary/20 hover:text-primary transition-all py-5 border border-secondary"
+                         disabled={analyzingMatch === match._id}
+                         onClick={() => analyzeSynergy(match._id, match.name, match.skills_offering, match.skills_learning)}
+                      >
+                         {analyzingMatch === match._id ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent mr-2"></div>
+                              Analyzing compatibility...
+                            </>
+                         ) : (
+                            <>
+                              <Bot className="w-4 h-4 mr-2 text-primary group-hover/btn:animate-pulse" />
+                              Why are we a match?
+                            </>
+                         )}
+                      </Button>
+                   )}
                 </div>
 
                 {/* Message Button */}

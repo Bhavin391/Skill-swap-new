@@ -74,5 +74,89 @@ No markdown formatting, no \`\`\`json wrappers. Just the JSON object text exactl
     }
   });
 
+  // POST /api/ai/quiz
+  // Body: { skill: "Python" }
+  router.post('/quiz', async (req, res) => {
+    try {
+      const { skill } = req.body;
+      if (!skill) return res.status(400).json({ error: "Missing skill" });
+
+      const ai = getGeminiClient();
+      const prompt = `
+You are an expert examiner. Generate a 3-question multiple choice quiz to verify an applicant's expertise in "${skill}". 
+The questions should be challenging enough to prove they know the topic well, but not overly obscure.
+Return ONLY a valid JSON object strictly matching this exact schema:
+{
+  "questions": [
+    {
+      "question": "The question text",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctIndex": 0
+    }
+  ]
+}
+Make sure the "questions" array contains exactly 3 question objects.
+No markdown formatting, no \`\`\`json wrappers. Just the JSON object text exactly so it can be parsed.
+`;
+
+      const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+      });
+
+      let responseText = response.text;
+      if (responseText.startsWith('\`\`\`')) {
+         responseText = responseText.replace(/^\`\`\`(json)?/gi, '').replace(/\`\`\`$/g, '').trim();
+      }
+
+      const quizObj = JSON.parse(responseText);
+      res.status(200).json(quizObj);
+    } catch (error) {
+       console.error("[v0] AI Quiz Generation Error:", error.message);
+       if (error.message.includes('GEMINI_API_KEY')) {
+          return res.status(500).json({ error: "API Key Missing", details: "Please add GEMINI_API_KEY to your backend .env file" });
+       }
+       res.status(500).json({ error: "Failed to generate quiz", details: error.message });
+    }
+  });
+
+  // POST /api/ai/synergy
+  router.post('/synergy', async (req, res) => {
+    try {
+      const { myOffering, myLearning, matchName, matchOffering, matchLearning } = req.body;
+      const ai = getGeminiClient();
+      const prompt = `
+I am looking for a peer learning partner. Here are my skills:
+My Offering: ${(myOffering || []).join(', ')}
+My Learning Goals: ${(myLearning || []).join(', ')}
+
+I just matched with ${matchName}, whose skills are:
+Their Offering: ${(matchOffering || []).join(', ')}
+Their Learning Goals: ${(matchLearning || []).join(', ')}
+
+Write a punchy, exciting, 3-sentence explanation of WHY we are a perfect match and what our collaborative potential is. Address the user directly (e.g., "You and ${matchName} are an incredible match because...").
+Do not include any JSON formatting or markdown wrappers, just return the 3-sentence plain text strictly.
+`;
+
+      const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+      });
+
+      let responseText = response.text;
+      if (responseText.startsWith('\`\`\`')) {
+         responseText = responseText.replace(/^\`\`\`(json)?/gi, '').replace(/\`\`\`$/g, '').trim();
+      }
+
+      res.status(200).json({ synergy: responseText.trim() });
+    } catch (error) {
+       console.error("[v0] AI Synergy Generation Error:", error.message);
+       if (error.message.includes('GEMINI_API_KEY')) {
+          return res.status(500).json({ error: "API Key Missing", details: "Please add GEMINI_API_KEY to your backend .env file" });
+       }
+       res.status(500).json({ error: "Failed to generate synergy", details: error.message });
+    }
+  });
+
   return router;
 };

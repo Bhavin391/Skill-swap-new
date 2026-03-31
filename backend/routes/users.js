@@ -90,5 +90,33 @@ module.exports = (usersCollection) => {
     }
   });
 
+  // Verify a skill
+  router.put('/me/skills/verify', verifyToken, async (req, res) => {
+    try {
+      const { skill } = req.body;
+      if (!skill) return res.status(400).json({ message: 'Missing skill' });
+
+      const result = await usersCollection.findOneAndUpdate(
+        { _id: new ObjectId(req.userId) },
+        {
+          $addToSet: {
+            verified_skills: skill
+          }
+        },
+        { returnDocument: 'after' }
+      );
+
+      if (!result) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const { password, ...userWithoutPassword } = result;
+      res.json({ message: 'Skill verified successfully', user: { ...userWithoutPassword, _id: result._id.toString() } });
+    } catch (error) {
+      console.error('[v0] Error verifying skill:', error);
+      res.status(500).json({ message: 'Error verifying skill' });
+    }
+  });
+
   return router;
 };

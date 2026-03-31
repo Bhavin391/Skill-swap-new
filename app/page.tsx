@@ -25,7 +25,7 @@ export default function Home() {
 
           {/* Main Heading with Animation */}
           <div className="space-y-4">
-            <h1 className="text-6xl md:text-7xl lg:text-8xl font-black text-foreground leading-tight tracking-tight animate-slide-up" style={{ animationDelay: '0.1s' }}>
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black text-foreground leading-tight sm:leading-tight md:leading-tight tracking-tight animate-slide-up" style={{ animationDelay: '0.1s' }}>
               <span className="block">Exchange Skills.</span>
               <span className="block bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-pulse-soft">Grow Forever.</span>
             </h1>
@@ -97,26 +97,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats Section (Premium Style) */}
-      <section className="relative py-20 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8 text-center">
-            {[
-              { value: '10K+', label: 'Active Learners' },
-              { value: '500+', label: 'Skills Shared' },
-              { value: '98%', label: 'Satisfaction Rate' },
-              { value: '25K+', label: 'Connections Made' } 
-            ].map((stat, i) => (
-              <div key={i} className="space-y-2 animate-fade-scale" style={{ animationDelay: `${0.7 + i * 0.1}s` }}>
-                <p className="text-4xl md:text-5xl font-black bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  {stat.value}
-                </p>
-                <p className="text-muted-foreground font-medium">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+
 
 
 
@@ -125,7 +106,7 @@ export default function Home() {
         <div className="relative z-10 space-y-8">
           <div className="space-y-5 animate-slide-up" style={{ animationDelay: '0.8s' }}>
             <p className="text-sm font-bold text-primary uppercase tracking-wider">Limited Time Offer</p>
-            <h2 className="text-5xl md:text-6xl font-black text-foreground leading-tight">
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-foreground leading-tight">
               Ready to Unlock Your Potential?
             </h2>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">

@@ -3,7 +3,7 @@
 import { useTheme } from '@/components/theme-provider'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Sun, Moon, Sparkles, LogOut } from 'lucide-react'
+import { Sun, Moon, Sparkles, LogOut, Menu, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -11,6 +11,7 @@ export function Header() {
   const { resolvedTheme, setTheme } = useTheme()
   const [isLoading, setIsLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -56,8 +57,8 @@ export function Header() {
           </Link>
         </nav>
 
-        {/* Right Actions */}
-        <div className="flex items-center gap-3">
+        {/* Right Actions (Desktop) */}
+        <div className="hidden md:flex items-center gap-3">
           {/* Theme Toggle */}
           <Button
             size="icon"
@@ -86,12 +87,41 @@ export function Header() {
             ) : (
               <>
                 <LogOut className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Logout</span>
+                <span>Logout</span>
               </>
             )}
           </Button>
         </div>
+
+        {/* Mobile Toggle */}
+        <div className="md:hidden flex items-center gap-2">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+          >
+            {mounted && resolvedTheme === 'dark' ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5 text-slate-600" />}
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </Button>
+        </div>
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden absolute top-full left-0 w-full bg-background/95 backdrop-blur-xl border-b border-border shadow-xl flex flex-col p-4 animate-in slide-in-from-top-2">
+          <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="py-3 px-4 hover:bg-secondary/50 rounded-lg text-sm font-bold text-foreground transition-colors">Dashboard</Link>
+          <Link href="/matches" onClick={() => setIsMobileMenuOpen(false)} className="py-3 px-4 hover:bg-secondary/50 rounded-lg text-sm font-bold text-foreground transition-colors">Matches</Link>
+          <Link href="/chat" onClick={() => setIsMobileMenuOpen(false)} className="py-3 px-4 hover:bg-secondary/50 rounded-lg text-sm font-bold text-foreground transition-colors">Messages</Link>
+          <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)} className="py-3 px-4 hover:bg-secondary/50 rounded-lg text-sm font-bold text-foreground transition-colors">Profile</Link>
+          <div className="mt-4 pt-4 border-t border-border px-4">
+             <Button size="sm" variant="destructive" onClick={handleLogout} className="w-full font-bold">
+               <LogOut className="w-4 h-4 mr-2" /> Logout
+             </Button>
+          </div>
+        </div>
+      )}
     </header>
   )
 }
