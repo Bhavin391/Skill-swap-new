@@ -4,8 +4,10 @@ import { useTheme } from '@/components/theme-provider'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Sun, Moon, Sparkles, LogOut, Menu, X } from 'lucide-react'
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useRef } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
+import { useToast } from '@/hooks/use-toast'
+import { apiClient } from '@/lib/api-client'
 
 export function Header() {
   const { resolvedTheme, setTheme } = useTheme()
@@ -13,10 +15,55 @@ export function Header() {
   const [mounted, setMounted] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const router = useRouter()
+  const pathname = usePathname()
+  const { toast } = useToast()
+  
+  // Track previous unread counts using a ref to avoid stale closures in setInterval
+  const prevChatsRef = useRef<{ [id: string]: number }>({})
 
   useEffect(() => {
     setMounted(true)
-  }, [])
+    
+    // Check for new messages periodically
+    const checkMessages = async () => {
+      const token = localStorage.getItem('token')
+      if (!token) return
+
+      try {
+        const data = await apiClient.get('/api/chats')
+        if (data.chats) {
+          data.chats.forEach((chat: any) => {
+            const prevUnread = prevChatsRef.current[chat._id] || 0
+            const currentUnread = chat.unread_count || 0
+            
+            // Only popup if the amount of unread messages went up and we are not on the chat screen with them
+            // Or if we just generally have more unread messages than yesterday
+            if (currentUnread > prevUnread) {
+              const isOnTheirChat = pathname.includes(`/chat/${chat._id}`);
+              
+              if (!isOnTheirChat) {
+                toast({
+                  title: `New Message from ${chat.name}`,
+                  description: chat.last_message ? chat.last_message.substring(0, 60) + (chat.last_message.length > 60 ? '...' : '') : 'Sent you a message',
+                })
+              }
+            }
+            
+            // Update the tracker
+            prevChatsRef.current[chat._id] = currentUnread
+          })
+        }
+      } catch (err) {
+        // Silently ignore ping errors
+      }
+    }
+
+    if (localStorage.getItem('token')) {
+      checkMessages();
+      const pollInterval = window.setInterval(checkMessages, 5000); // Check every 5s
+      return () => window.clearInterval(pollInterval);
+    }
+  }, [toast, pathname])
 
   const handleLogout = async () => {
     setIsLoading(true)

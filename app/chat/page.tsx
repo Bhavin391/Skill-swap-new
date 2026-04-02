@@ -50,10 +50,16 @@ export default function ChatPage() {
     }
   }
 
-  const filteredConversations = conversations.filter(conv =>
-    conv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conv.email.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredConversations = [...conversations]
+    .filter(conv =>
+      conv.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      conv.email.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      const timeA = a.last_message_time ? new Date(a.last_message_time).getTime() : 0;
+      const timeB = b.last_message_time ? new Date(b.last_message_time).getTime() : 0;
+      return timeB - timeA;
+    });
 
   if (isLoading) {
     return (

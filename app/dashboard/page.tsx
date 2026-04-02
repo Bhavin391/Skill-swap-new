@@ -28,6 +28,8 @@ export default function DashboardPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [matchCount, setMatchCount] = useState(0)
   const [messageCount, setMessageCount] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // AI Verification State
   const [quizModalOpen, setQuizModalOpen] = useState(false)
